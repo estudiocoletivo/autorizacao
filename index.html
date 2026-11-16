@@ -202,15 +202,15 @@ function termoTexto(p,c){
 ``,
 `AUTORIZANTE: ${qualif}${rep}.`,
 ``,
-`AUTORIZADAS: ${empQualif(pr)}${pr.endereco?`, com sede em ${pr.endereco}`:""} ("PRODUTORA"); ${empQualif(ag)} ("AGÊNCIA")${p.anunciante?`; e ${p.anunciante} ("ANUNCIANTE")`:""}.`,
+`AUTORIZADA(S): ${empQualif(pr)}${pr.endereco?`, com sede em ${pr.endereco}`:""} ("PRODUTORA")${(ag.cnpj||ag.nome)?`; ${empQualif(ag)} ("AGÊNCIA")`:""}${p.anunciante?`; e ${p.anunciante} ("ANUNCIANTE")`:""}.`,
 ``,
-`${cl()} OBJETO. O(A) AUTORIZANTE autoriza as AUTORIZADAS a utilizar sua imagem, voz, nome${c.nomeArtistico?" e nome artístico":""} e interpretação, captados na(s) data(s) de ${datas}${p.local?`, em ${p.local}`:""}, na produção da obra audiovisual publicitária "${f.titulo}"${f.campanha?`, campanha "${f.campanha}"`:""}${p.diretor?`, sob direção de ${p.diretor}`:""}, na função de ${c.funcao}${c.personagem?` (personagem/papel: ${c.personagem})`:""}.`,
+`${cl()} OBJETO. O(A) AUTORIZANTE autoriza a(s) AUTORIZADA(S) a utilizar sua imagem, voz, nome${c.nomeArtistico?" e nome artístico":""} e interpretação, captados na(s) data(s) de ${datas}${p.local?`, em ${p.local}`:""}, na produção da obra audiovisual publicitária "${f.titulo}"${f.campanha?`, campanha "${f.campanha}"`:""}${p.diretor?`, sob direção de ${p.diretor}`:""}, na função de ${c.funcao}${c.personagem?` (personagem/papel: ${c.personagem})`:""}.`,
 ``,
 `${cl()} FINALIDADE E MÍDIAS. O uso restringe-se à veiculação da obra e de suas peças derivadas (versões, reduções, cortes, fotografias de cena/still e making of) nas seguintes mídias: ${midias}. Qualquer uso fora dessas mídias ou finalidades dependerá de nova autorização por escrito.`,
 ``,
 `${cl()} TERRITÓRIO. ${p.territorio||"Brasil"}.`,
 ``,
-`${cl()} PRAZO. A autorização vigora por ${p.prazoMeses||12} (${extenso(p.prazoMeses||12)}) meses, contados ${p.inicioVeiculacao?`a partir de ${dataBR(p.inicioVeiculacao)} ou da primeira veiculação, o que ocorrer primeiro`:"da primeira veiculação da obra"}. Encerrado o prazo, a continuidade do uso dependerá de renovação expressa. Fica permitido, sem limite de prazo e sem fins de veiculação comercial, o uso da obra em portfólio das AUTORIZADAS, em arquivo histórico e na inscrição em festivais e premiações.`,
+`${cl()} PRAZO. A autorização vigora por ${p.prazoMeses||12} (${extenso(p.prazoMeses||12)}) meses, contados ${p.inicioVeiculacao?`a partir de ${dataBR(p.inicioVeiculacao)} ou da primeira veiculação, o que ocorrer primeiro`:"da primeira veiculação da obra"}. Encerrado o prazo, a continuidade do uso dependerá de renovação expressa. Fica permitido, sem limite de prazo e sem fins de veiculação comercial, o uso da obra em portfólio da(s) AUTORIZADA(S), em arquivo histórico e na inscrição em festivais e premiações.`,
 ``,
 `${cl()} REMUNERAÇÃO. ${remun}`,
 ``,
@@ -272,7 +272,7 @@ async function gerarPdf(p,c,assets){
   const row=(k,v)=>{doc.setFont("helvetica","bold");doc.text(k,M,y);doc.setFont("helvetica","normal");const t=doc.splitTextToSize(String(v||"—"),LW-55);doc.text(t,M+55,y);y+=Math.max(5,t.length*4.4)+1};
   row("Identificador do documento",c.docId);
   row("Assinado em",`${c.assinadoEmBR}\n${c.assinadoEm} (UTC)`);
-  row("Produção",`${prodTitulo(p)} · Agência: ${empNome(p.agencia)||"—"} · Produtora: ${empNome(p.produtora)||"—"}`);
+  row("Produção",`${prodTitulo(p)}${p.filme?.campanha?` · Campanha: ${p.filme.campanha}`:""} · Produtora: ${empNome(p.produtora)||"—"}`);
   row("Signatário",c.menor?`${c.resp.nome} (CPF ${fmtCPF(c.resp.cpf)}), representante de ${c.nome}`:`${c.nome} (CPF ${fmtCPF(c.cpf)})`);
   row("Contato do signatário",[c.email,c.telefone].filter(Boolean).join(" · "));
   row("Carimbo de tempo","Data e hora fornecidas pelo servidor da produção (Google), não pelo aparelho.");
@@ -371,14 +371,14 @@ bind.login=()=>{
 function prodSelector(){
   if(!S.producoes.length) return "";
   return `<label class="f" style="max-width:420px">Produção
-    <select id="prodSel">${S.producoes.map(p=>`<option value="${p.id}" ${p.id===S.prodSel?"selected":""}>${esc(prodTitulo(p))} — ${esc(empNome(p.agencia))}</option>`).join("")}</select></label>`;
+    <select id="prodSel">${S.producoes.map(p=>`<option value="${p.id}" ${p.id===S.prodSel?"selected":""}>${esc(prodTitulo(p))}${p.filme?.campanha?` — ${esc(p.filme.campanha)}`:""}</option>`).join("")}</select></label>`;
 }
 function viewProducoes(){
   if(S.editProd) return prodForm(S.editProd);
   const list = S.producoes.length ? S.producoes.map(p=>`<div class="item">
       <div style="flex:1;min-width:0">
         <div class="t">${esc(prodTitulo(p))}${p.filme?.campanha?` <span class="muted" style="font-weight:400">· ${esc(p.filme.campanha)}</span>`:""} ${p.ativo?"":`<span class="badge b-err">link encerrado</span>`}</div>
-        <div class="small muted">Agência: ${esc(empNome(p.agencia))} · Produtora: ${esc(empNome(p.produtora))}</div>
+        <div class="small muted">Produtora: ${esc(empNome(p.produtora))}</div>
         <div class="small muted">Gravação: ${esc(p.datasGravacao||"—")}${p.local?` · ${esc(p.local)}`:""}</div>
       </div>
       <div class="row" style="justify-content:flex-end">
@@ -414,7 +414,7 @@ function abrirLink(id){
   $("#cpLink").onclick=async()=>{ const i=$("#linkIn"); i.select(); try{ await navigator.clipboard.writeText(url); }catch(e){ try{document.execCommand("copy")}catch(x){} } $("#cpLink").textContent="Copiado!"; };
 }
 bind.producoes=()=>{
-  $("#newProd")?.addEventListener("click",()=>{S.editProd={midias:["Internet e redes sociais"],prazoMeses:12,territorio:"Brasil",produtora:{},agencia:{},filme:{},ativo:true};render()});
+  $("#newProd")?.addEventListener("click",()=>{S.editProd={midias:["Internet e redes sociais"],prazoMeses:12,territorio:"Brasil",produtora:{},filme:{},ativo:true};render()});
   app.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{const p=S.producoes.find(x=>x.id===b.dataset.edit);S.editProd=JSON.parse(JSON.stringify(p));render()});
   app.querySelectorAll("[data-link]").forEach(b=>b.onclick=()=>abrirLink(b.dataset.link));
   bindProdForm();
@@ -428,7 +428,7 @@ function prodForm(p){
     <h3>Filme</h3>
     <div class="grid">
       ${inp("f_titulo","Título do filme / peça",f.titulo,1)}
-      ${inp("f_campanha","Campanha",f.campanha)}
+      ${inp("f_campanha","Campanha",f.campanha,1)}
       ${inp("f_anunciante","Anunciante / cliente",p.anunciante)}
       ${inp("f_diretor","Direção",p.diretor)}
       ${inp("f_datas","Data(s) de gravação",p.datasGravacao,1)}
@@ -441,11 +441,6 @@ function prodForm(p){
       ${inp("pr_end","Endereço da sede (opcional)",pr.endereco,0,"text","span2")}
       ${inp("pr_email","E-mail para LGPD (opcional)",pr.email,0,"email")}
       ${inp("f_rep","Representante da produção no set",p.repSet)}
-    </div>
-    <h3>Agência</h3>
-    <div class="grid">
-      ${inp("ag_cnpj","CNPJ",ag.cnpj?fmtCNPJ(ag.cnpj):"",1)}<div class="small muted span2" id="ag_hint" style="align-self:end"></div>
-      ${inp("ag_nome","Nome (opcional)",ag.nome)}
     </div>
     <h3>Condições de uso</h3>
     <div style="margin-bottom:12px"><div class="small" style="font-weight:500;margin-bottom:6px">Mídias autorizadas</div>
@@ -483,7 +478,7 @@ function bindProdForm(){
   if(!S.editProd) return;
   $("#cancelProd").onclick=()=>{S.editProd=null;render()};
   $("#f_iamodo").onchange=e=>$("#iaBox").classList.toggle("hidden",e.target.value==="nao");
-  [["pr_cnpj","pr"],["ag_cnpj","ag"]].forEach(([id,pre])=>{const el=$("#"+id);el.oninput=async()=>{
+  [["pr_cnpj","pr"]].forEach(([id,pre])=>{const el=$("#"+id);el.oninput=async()=>{
     el.value=fmtCNPJ(el.value);const d=onlyDigits(el.value);el.classList.toggle("bad",d.length===14&&!cnpjOk(d));
     const hint=$("#"+pre+"_hint");hint.textContent="";
     if(!cnpjOk(d))return;
@@ -503,7 +498,7 @@ function bindProdForm(){
       filme:{titulo:v("f_titulo"),campanha:v("f_campanha")},
       anunciante:v("f_anunciante"),diretor:v("f_diretor"),datasGravacao:v("f_datas"),local:v("f_local"),
       produtora:{nome:v("pr_nome"),cnpj:onlyDigits(v("pr_cnpj")),endereco:v("pr_end"),email:v("pr_email")},
-      repSet:v("f_rep"), agencia:{nome:v("ag_nome"),cnpj:onlyDigits(v("ag_cnpj"))},
+      repSet:v("f_rep"), agencia:p.agencia||{},
       midias:[...app.querySelectorAll("input[name=midia]:checked")].map(i=>i.value),
       territorio:v("f_terr"),prazoMeses:Math.max(1,parseInt(v("f_prazo"))||12),inicioVeiculacao:v("f_inicio"),
       foro:v("f_foro"),cidadeAssinatura:v("f_cidade"),remuneracaoPadrao:v("f_remun"),clausulasExtras:v("f_extras"),
@@ -511,7 +506,7 @@ function bindProdForm(){
     };
     const miss=[];
     if(!data.filme.titulo)miss.push("título do filme");if(!data.datasGravacao)miss.push("data de gravação");
-    if(!cnpjOk(data.produtora.cnpj))miss.push("CNPJ válido da produtora");if(!cnpjOk(data.agencia.cnpj))miss.push("CNPJ válido da agência");
+    if(!data.filme.campanha)miss.push("campanha");if(!cnpjOk(data.produtora.cnpj))miss.push("CNPJ válido da produtora");
     if(!data.midias.length)miss.push("ao menos uma mídia");
     if(data.ia.modo!=="nao"&&!data.ia.usos.length)miss.push("ao menos um uso de IA (ou escolha não pedir)");if(!data.territorio)miss.push("território");
     if(miss.length) return alertErr("#prodErr","Preencha: "+miss.join(", ")+".");
@@ -529,7 +524,7 @@ function viewAssinar(){
   if(!p) return S.erro ? `<div class="card"><div class="empty">${esc(S.erro)}</div></div>` : `<div class="card"><div class="empty">Carregando…</div></div>`;
   const st=S.set, c=st.c;
   const setBadge = modoSet() ? `<span class="badge b-warn">modo set · produção</span>` : "";
-  const head=`<div class="prodhead"><div class="row"><div class="t">${esc(prodTitulo(p))}</div>${setBadge}</div><div class="small muted">${esc(empNome(p.agencia))} · ${esc(empNome(p.produtora))} · ${esc(p.datasGravacao||"")}</div></div>`;
+  const head=`<div class="prodhead"><div class="row"><div class="t">${esc(prodTitulo(p))}</div>${setBadge}</div><div class="small muted">${p.filme?.campanha?`${esc(p.filme.campanha)} · `:""}${esc(empNome(p.produtora))} · ${esc(p.datasGravacao||"")}</div></div>`;
   const bar=`<div class="steps">${[0,1,2,3].map(i=>`<div class="${i<=st.step?"on":""}"></div>`).join("")}</div>`;
   let body="";
   if(st.result){
