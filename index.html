@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#c2410c">
+<title>Autorização de Imagem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --bg:#f5f4f0; --card:#fff; --ink:#1b1b1a; --muted:#6b6a66; --line:#e3e1db;
+  --accent:#c2410c; --accent-ink:#fff; --ok:#15803d; --warn:#b45309; --err:#b91c1c;
+  --r:12px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,system-ui,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+header{display:flex;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:5}
+header h1{font-size:16px;margin:0;font-weight:700;letter-spacing:-.01em}
+header .sub{color:var(--muted);font-size:13px}
+nav{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+nav button{background:none;border:0;padding:8px 12px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:500}
+nav button[data-sair]{color:var(--err)}
+nav button.on{background:var(--ink);color:#fff}
+main{max-width:980px;margin:0 auto;padding:24px 20px 80px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:16px}
+h2{font-size:20px;margin:0 0 4px;letter-spacing:-.01em}
+h3{font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:22px 0 10px;font-weight:600}
+h3:first-child{margin-top:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px 14px}
+.grid .span2{grid-column:span 2}
+@media(max-width:560px){.grid .span2{grid-column:auto}}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:500}
+label.f span.req::after{content:" *";color:var(--accent)}
+input[type=text],input[type=email],input[type=tel],input[type=date],input[type=number],select,textarea{
+  border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#fff;width:100%;font-size:15px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--ink);outline-offset:-1px;border-color:transparent}
+input.bad{border-color:var(--err);background:#fef2f2}
+textarea{min-height:80px;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:14px;user-select:none}
+.chip input{margin:0}
+.chip:has(input:checked){background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:10px;padding:11px 18px;font-weight:600;cursor:pointer;min-height:44px}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.accent{background:var(--accent);border-color:var(--accent)}
+.btn.sm{padding:6px 12px;min-height:34px;font-size:13px;font-weight:500}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.spacer{flex:1}
+.list{display:flex;flex-direction:column;gap:10px}
+.item{display:flex;gap:14px;align-items:center;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.item .t{font-weight:600}
+.badge{font-size:12px;padding:2px 8px;border-radius:999px;font-weight:600;white-space:nowrap}
+.b-ok{background:#dcfce7;color:var(--ok)} .b-warn{background:#fef3c7;color:var(--warn)} .b-err{background:#fee2e2;color:var(--err)}
+.empty{padding:30px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px}
+.notice{padding:12px 14px;border-radius:10px;font-size:14px;margin-bottom:14px}
+.notice.warn{background:#fef3c7;color:#713f12}
+.notice.err{background:#fee2e2;color:#7f1d1d}
+.notice.ok{background:#dcfce7;color:#14532d}
+.notice.info{background:#eef2ff;color:#1e3a8a}
+/* set mode */
+.steps{display:flex;gap:6px;margin-bottom:18px}
+.steps div{flex:1;height:5px;border-radius:9px;background:var(--line)}
+.steps div.on{background:var(--accent)}
+.prodhead{border-left:4px solid var(--accent);padding-left:12px;margin-bottom:18px}
+.prodhead .t{font-weight:700;font-size:18px}
+.term{font-family:"Source Serif 4",Georgia,serif;font-size:16px;line-height:1.65;max-height:55vh;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:20px 22px;background:#fffdf8;white-space:pre-wrap}
+.check{display:flex;gap:10px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.check input{width:22px;height:22px;margin-top:1px;flex:none}
+.sigwrap{position:relative;border:2px dashed var(--line);border-radius:12px;background:#fff;touch-action:none}
+.sigwrap canvas{display:block;width:100%;height:220px;touch-action:none;cursor:crosshair}
+.sigwrap .line{position:absolute;left:24px;right:24px;bottom:48px;border-bottom:1px solid #bbb;pointer-events:none}
+.sigwrap .hint{position:absolute;left:24px;bottom:22px;font-size:12px;color:var(--muted);pointer-events:none}
+.photo{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.photo img{width:160px;height:160px;object-fit:cover;border-radius:12px;border:1px solid var(--line);background:#eee}
+.photo .ph{width:160px;height:160px;border-radius:12px;border:2px dashed var(--line);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;padding:10px}
+.done{text-align:center;padding:30px 10px}
+.done .big{font-size:56px;line-height:1}
+code.h{font-family:ui-monospace,Menlo,monospace;font-size:11px;word-break:break-all;color:var(--muted)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
+.overlay .card{max-width:440px;width:100%}
+.hidden{display:none!important}
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+table.t td,table.t th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.t th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Autorização de Imagem</h1>
+    <div class="sub" id="hdrSub"></div>
+  </div>
+  <nav id="nav"></nav>
+</header>
+<main id="app"><div class="empty">Carregando…</div></main>
+<div id="modal" class="overlay hidden"><div class="card" id="modalBody"></div></div>
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxzBdtux72zT7jUCb5lYSRvoEQUdz4JqFbn4XFLsw0ExlJXW_wNg9UemsliVWlgQfre/exec";
+const BOOT = (()=>{ const q=new URLSearchParams(location.search); const h=new URLSearchParams(location.hash.replace(/^#/,"")); return { prod:q.get("p")||h.get("p")||"", view:q.get("v")||h.get("v")||"" }; })();
+const APP_URL = location.origin + location.pathname;
+(() => {
+"use strict";
+/* ===================== Constantes e estado ===================== */
+const TZ = "America/Sao_Paulo";
+const MIDIAS = ["TV aberta","TV por assinatura","Internet e redes sociais","Streaming / CTV","Cinema","Mídia exterior (OOH/DOOH)","Mídia impressa","Ponto de venda","Rádio (áudio)","Eventos e feiras","Comunicação interna"];
+const FUNCOES = ["Elenco principal","Elenco de apoio","Figuração","Locução / voz","Participação especial"];
+const $ = (s,el=document)=>el.querySelector(s);
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const app = $("#app");
+const S = { pin:null, urls:null, view:"producoes", producoes:[], prodSel:null, assin:[], banco:null, bancoQ:"", editProd:null, prodPub:null, set:null, erro:null };
+
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return store._m[k]||null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){ store._m[k]=v; } },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){ delete store._m[k]; } }, _m:{}
+};
+
+/* Chamada ao servidor (Apps Script) */
+async function api(fn,...args){
+  let r;
+  try{
+    r = await fetch(API_URL,{method:"POST",credentials:"omit",redirect:"follow",body:JSON.stringify({fn,args})});
+  }catch(e){ throw new Error("Sem conexão com o servidor. Verifique a internet e tente de novo."); }
+  let j; try{ j = await r.json(); }catch(e){ throw new Error("Resposta inválida do servidor ("+r.status+")."); }
+  if(!j.ok) throw new Error(j.error||"Erro no servidor.");
+  return j.data;
+}
+function errMsg(e){ return String(e&&e.message||e||"Erro").replace(/^Error:\s*/,"").replace(/^Exception:\s*/,""); }
+
+/* ===================== Utilidades (compartilhadas) ===================== */
+/* ===================== Utilidades ===================== */
+function uuid(){ return (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c=='x'?r:(r&3|8)).toString(16)})); }
+function onlyDigits(s){return String(s||"").replace(/\D/g,"")}
+function fmtCPF(s){const d=onlyDigits(s).slice(0,11);return d.replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d{1,2})$/,"$1-$2")}
+function fmtCNPJ(s){const d=onlyDigits(s).slice(0,14);return d.replace(/^(\d{2})(\d)/,"$1.$2").replace(/^(\d{2})\.(\d{3})(\d)/,"$1.$2.$3").replace(/\.(\d{3})(\d)/,".$1/$2").replace(/(\d{4})(\d)/,"$1-$2")}
+function cnpjOk(s){const c=onlyDigits(s);if(c.length!==14||/^(\d)\1+$/.test(c))return false;const calc=n=>{let t=0,p=n-7;for(let i=0;i<n;i++){t+=+c[i]*p--;if(p<2)p=9}const r=t%11;return r<2?0:11-r};return calc(12)===+c[12]&&calc(13)===+c[13]}
+function empNome(e){return e?.nome||(e?.cnpj?`CNPJ ${fmtCNPJ(e.cnpj)}`:"")}
+function empQualif(e){return e?.nome?`${e.nome}${e.cnpj?`, CNPJ nº ${fmtCNPJ(e.cnpj)}`:""}`:`pessoa jurídica inscrita no CNPJ sob o nº ${fmtCNPJ(e?.cnpj)}`}
+function cpfOk(s){const c=onlyDigits(s);if(c.length!==11||/^(\d)\1+$/.test(c))return false;let t=0;for(let i=0;i<9;i++)t+=+c[i]*(10-i);let d=(t*10)%11%10;if(d!==+c[9])return false;t=0;for(let i=0;i<10;i++)t+=+c[i]*(11-i);d=(t*10)%11%10;return d===+c[10]}
+function idade(nasc){if(!nasc)return null;const n=new Date(nasc+"T12:00:00");const h=new Date();let a=h.getFullYear()-n.getFullYear();const m=h.getMonth()-n.getMonth();if(m<0||(m===0&&h.getDate()<n.getDate()))a--;return a}
+function dataBR(iso){if(!iso)return"";const [y,m,d]=iso.split("-");return `${d}/${m}/${y}`}
+function agoraBR(d=new Date()){return new Intl.DateTimeFormat("pt-BR",{timeZone:TZ,dateStyle:"long",timeStyle:"medium"}).format(d)+" (horário de Brasília)"}
+function prodTitulo(p){return p?.filme?.titulo||"Sem título"}
+function slugFile(s){return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w\- ]+/g,"").trim().slice(0,80)}
+
+/* SHA-256 com fallback */
+async function sha256(data){
+  const bytes = typeof data==="string" ? new TextEncoder().encode(data) : new Uint8Array(data);
+  try{ if(crypto.subtle){const h=await crypto.subtle.digest("SHA-256",bytes);return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,"0")).join("")} }catch(e){}
+  return sha256js(bytes);
+}
+function sha256js(m){const K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];let H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];const l=m.length,bl=((l+9+63)>>6)<<6,b=new Uint8Array(bl);b.set(m);b[l]=0x80;const dv=new DataView(b.buffer);dv.setUint32(bl-4,l*8>>>0);dv.setUint32(bl-8,Math.floor(l/0x20000000));const w=new Uint32Array(64);const r=(x,n)=>(x>>>n)|(x<<(32-n));for(let o=0;o<bl;o+=64){for(let i=0;i<16;i++)w[i]=dv.getUint32(o+i*4);for(let i=16;i<64;i++){const s0=r(w[i-15],7)^r(w[i-15],18)^(w[i-15]>>>3),s1=r(w[i-2],17)^r(w[i-2],19)^(w[i-2]>>>10);w[i]=(w[i-16]+s0+w[i-7]+s1)>>>0}let[a,bb,c,d,e,f,g,h]=H;for(let i=0;i<64;i++){const S1=r(e,6)^r(e,11)^r(e,25),ch=(e&f)^(~e&g),t1=(h+S1+ch+K[i]+w[i])>>>0,S0=r(a,2)^r(a,13)^r(a,22),mj=(a&bb)^(a&c)^(bb&c),t2=(S0+mj)>>>0;h=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=bb;bb=a;a=(t1+t2)>>>0}H=[H[0]+a,H[1]+bb,H[2]+c,H[3]+d,H[4]+e,H[5]+f,H[6]+g,H[7]+h].map(x=>x>>>0)}return H.map(x=>x.toString(16).padStart(8,"0")).join("")}
+
+function b64FromBuf(buf){let s="";const b=new Uint8Array(buf);for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(s)}
+
+/* Reduz imagem para JPEG */
+function loadImageFile(file,max=900,q=.78){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onload=()=>{const img=new Image();img.onload=()=>{const s=Math.min(1,max/Math.max(img.width,img.height));const c=document.createElement("canvas");c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext("2d").drawImage(img,0,0,c.width,c.height);res(c.toDataURL("image/jpeg",q))};img.onerror=rej;img.src=fr.result};
+    fr.onerror=rej;fr.readAsDataURL(file);
+  });
+}
+
+function modal(html){ $("#modalBody").innerHTML=html; $("#modal").classList.remove("hidden"); }
+function closeModal(){ $("#modal").classList.add("hidden"); }
+function confirmBox(msg,okLabel="Confirmar"){
+  return new Promise(res=>{
+    modal(`<p style="margin-top:0">${msg}</p><div class="row" style="justify-content:flex-end"><button class="btn ghost" id="mNo">Cancelar</button><button class="btn" id="mYes">${esc(okLabel)}</button></div>`);
+    $("#mNo").onclick=()=>{closeModal();res(false)}; $("#mYes").onclick=()=>{closeModal();res(true)};
+  });
+}
+
+/* ===================== Termo ===================== */
+function termoTexto(p,c){
+  const pr=p.produtora||{}, ag=p.agencia||{}, f=p.filme||{};
+  const menor = !!c.menor;
+  const midias = (p.midias||[]).join("; ") || "—";
+  const nomeExib = c.nomeArtistico ? `${c.nome} (nome artístico: ${c.nomeArtistico})` : c.nome;
+  const qualif = `${nomeExib}, inscrito(a) no CPF sob o nº ${fmtCPF(c.cpf)}${c.rg?`, RG nº ${c.rg}`:""}${c.drt?`, DRT nº ${c.drt}`:""}, nascido(a) em ${dataBR(c.nascimento)}${c.endereco?`, residente e domiciliado(a) em ${c.endereco}`:""}`;
+  const rep = menor ? `, neste ato representado(a) por seu(sua) ${c.resp.parentesco||"responsável legal"}, ${c.resp.nome}, inscrito(a) no CPF sob o nº ${fmtCPF(c.resp.cpf)}, que assina em seu nome e declara deter poderes para tanto` : "";
+  const datas = p.datasGravacao || "—";
+  const remun = c.cache ? `A presente autorização é concedida mediante a remuneração ajustada de ${c.cache}, já incluída no cachê de participação, nada mais sendo devido a título de uso de imagem dentro dos limites deste termo.` : (p.remuneracaoPadrao || "A presente autorização é concedida a título gratuito, sem qualquer remuneração adicional pelo uso de imagem.");
+  const extras = (p.clausulasExtras||"").trim();
+  let n=0; const cl=()=>`${++n}.`;
+  return [
+`TERMO DE AUTORIZAÇÃO DE USO DE IMAGEM, VOZ E NOME`,
+``,
+`AUTORIZANTE: ${qualif}${rep}.`,
+``,
+`AUTORIZADAS: ${empQualif(pr)}${pr.endereco?`, com sede em ${pr.endereco}`:""} ("PRODUTORA"); ${empQualif(ag)} ("AGÊNCIA")${p.anunciante?`; e ${p.anunciante} ("ANUNCIANTE")`:""}.`,
+``,
+`${cl()} OBJETO. O(A) AUTORIZANTE autoriza as AUTORIZADAS a utilizar sua imagem, voz, nome${c.nomeArtistico?" e nome artístico":""} e interpretação, captados na(s) data(s) de ${datas}${p.local?`, em ${p.local}`:""}, na produção da obra audiovisual publicitária "${f.titulo}"${f.campanha?`, campanha "${f.campanha}"`:""}${p.diretor?`, sob direção de ${p.diretor}`:""}, na função de ${c.funcao}${c.personagem?` (personagem/papel: ${c.personagem})`:""}.`,
+``,
+`${cl()} FINALIDADE E MÍDIAS. O uso restringe-se à veiculação da obra e de suas peças derivadas (versões, reduções, cortes, fotografias de cena/still e making of) nas seguintes mídias: ${midias}. Qualquer uso fora dessas mídias ou finalidades dependerá de nova autorização por escrito.`,
+``,
+`${cl()} TERRITÓRIO. ${p.territorio||"Brasil"}.`,
+``,
+`${cl()} PRAZO. A autorização vigora por ${p.prazoMeses||12} (${extenso(p.prazoMeses||12)}) meses, contados ${p.inicioVeiculacao?`a partir de ${dataBR(p.inicioVeiculacao)} ou da primeira veiculação, o que ocorrer primeiro`:"da primeira veiculação da obra"}. Encerrado o prazo, a continuidade do uso dependerá de renovação expressa. Fica permitido, sem limite de prazo e sem fins de veiculação comercial, o uso da obra em portfólio das AUTORIZADAS, em arquivo histórico e na inscrição em festivais e premiações.`,
+``,
+`${cl()} REMUNERAÇÃO. ${remun}`,
+``,
+`${cl()} NATUREZA DA AUTORIZAÇÃO. Este termo constitui licença de uso, limitada às condições acima, e não importa cessão de direitos autorais ou conexos, observado o art. 13 da Lei nº 6.533/1978. É vedado o uso da imagem de forma que atente contra a honra, a boa fama ou a respeitabilidade do(a) AUTORIZANTE (art. 20 do Código Civil), bem como a criação, por qualquer meio técnico, inclusive inteligência artificial, de novas cenas, falas ou interpretações não captadas na gravação, sem nova autorização específica.`,
+``,
+`${cl()} DADOS PESSOAIS. Os dados pessoais do(a) AUTORIZANTE${menor?" e de seu(sua) representante":""}, incluindo a fotografia coletada para comprovação de identidade, serão tratados pela PRODUTORA para a execução deste termo e o cumprimento de obrigações legais (art. 7º, incisos II e V, da Lei nº 13.709/2018 — LGPD)${menor?", observado o melhor interesse da criança e do adolescente (art. 14 da LGPD)":""}, e armazenados pelo prazo de vigência acrescido dos prazos legais de guarda. O(A) titular poderá exercer os direitos do art. 18 da LGPD${pr.email?` pelo e-mail ${pr.email}`:" junto à PRODUTORA"}.`,
+``,
+`${cl()} ASSINATURA ELETRÔNICA. As partes reconhecem como válida a assinatura eletrônica deste termo, colhida presencialmente no local da gravação, nos termos do art. 10, § 2º, da Medida Provisória nº 2.200-2/2001, e admitem como meios de comprovação de autoria e integridade: a assinatura manuscrita digital, a fotografia do(a) signatário(a) no ato, a data e hora da assinatura, o identificador único do documento e o resumo criptográfico (hash SHA-256) registrados na trilha de auditoria deste documento.`,
+...(extras?[``,`${cl()} DISPOSIÇÕES ADICIONAIS. ${extras}`]:[]),
+``,
+`${cl()} FORO. Fica eleito o foro da comarca de ${p.foro||"domicílio do(a) AUTORIZANTE"} para dirimir quaisquer questões oriundas deste termo.`,
+``,
+`O(A) AUTORIZANTE${menor?", por meio de seu(sua) representante legal,":""} declara ter lido integralmente este termo, compreendido seu conteúdo e concordado livremente com todas as suas condições.`
+  ].join("\n");
+}
+function extenso(n){const u=["zero","um","dois","três","quatro","cinco","seis","sete","oito","nove","dez","onze","doze","treze","quatorze","quinze","dezesseis","dezessete","dezoito","dezenove"],d=["","","vinte","trinta","quarenta","cinquenta","sessenta","setenta","oitenta","noventa"];n=+n;if(n<20)return u[n]||String(n);if(n<100)return d[Math.floor(n/10)]+(n%10?" e "+u[n%10]:"");return String(n)}
+
+
+/* ===================== PDF ===================== */
+/* ===================== PDF ===================== */
+async function gerarPdf(p,c,assets){
+  const { jsPDF } = window.jspdf;
+  const doc=new jsPDF({unit:"mm",format:"a4"});
+  const W=210,M=20,LW=W-2*M; let y=M;
+  const page=()=>{doc.addPage();y=M;rodape()};
+  const rodape=()=>{doc.setFont("helvetica","normal");doc.setFontSize(7.5);doc.setTextColor(120);doc.text(`Documento ${c.docId} · Hash do conteúdo SHA-256: ${c.hashConteudo}`,M,290,{maxWidth:LW});doc.setTextColor(0)};
+  rodape();
+  const lines=assets.texto.split("\n");
+  lines.forEach((ln,i)=>{
+    if(i===0){doc.setFont("helvetica","bold");doc.setFontSize(13);const t=doc.splitTextToSize(ln,LW);doc.text(t,W/2,y,{align:"center"});y+=t.length*6+2;return}
+    doc.setFont("times","normal");doc.setFontSize(11);
+    if(!ln){y+=2.5;return}
+    const t=doc.splitTextToSize(ln,LW);
+    for(const l of t){ if(y>278)page(); doc.text(l,M,y,{align:"left"}); y+=5.1; }
+  });
+  // Assinatura
+  if(y>220)page();
+  y+=6;
+  doc.setFont("helvetica","normal");doc.setFontSize(10);
+  doc.text(`${p.cidadeAssinatura||p.local||""}${p.cidadeAssinatura||p.local?", ":""}${c.assinadoEmBR}`,M,y); y+=6;
+  doc.addImage(assets.assinatura,"PNG",M,y,80,30); y+=31;
+  doc.line(M,y,M+90,y); y+=5;
+  doc.setFontSize(9);
+  doc.text(c.menor?`${c.resp.nome} — CPF ${fmtCPF(c.resp.cpf)}`:`${c.nome} — CPF ${fmtCPF(c.cpf)}`,M,y); y+=4.5;
+  doc.text(c.menor?`Representante legal de ${c.nome}`:`AUTORIZANTE`,M,y); y+=4;
+
+  // Trilha de auditoria
+  page();
+  doc.setFont("helvetica","bold");doc.setFontSize(13);doc.text("TRILHA DE AUDITORIA DA ASSINATURA",M,y);y+=9;
+  doc.setFontSize(9.5);
+  const row=(k,v)=>{doc.setFont("helvetica","bold");doc.text(k,M,y);doc.setFont("helvetica","normal");const t=doc.splitTextToSize(String(v||"—"),LW-55);doc.text(t,M+55,y);y+=Math.max(5,t.length*4.4)+1};
+  row("Identificador do documento",c.docId);
+  row("Assinado em",`${c.assinadoEmBR}\n${c.assinadoEm} (UTC)`);
+  row("Produção",`${prodTitulo(p)} · Agência: ${empNome(p.agencia)||"—"} · Produtora: ${empNome(p.produtora)||"—"}`);
+  row("Signatário",c.menor?`${c.resp.nome} (CPF ${fmtCPF(c.resp.cpf)}), representante de ${c.nome}`:`${c.nome} (CPF ${fmtCPF(c.cpf)})`);
+  row("Contato do signatário",[c.email,c.telefone].filter(Boolean).join(" · "));
+  row("Carimbo de tempo","Data e hora fornecidas pelo servidor da produção (Google), não pelo aparelho.");
+  if(c.modo==="set") row("Coletado por",`Equipe da produção, no set${p.repSet?` · Representante: ${p.repSet}`:""}`);
+  row("Forma de coleta", c.modo==="set"
+    ? "Presencial, no local da gravação, em dispositivo da produção, com leitura do termo, aceite expresso das cláusulas, fotografia do signatário no ato e assinatura manuscrita digital."
+    : "Remota, pelo link enviado pela produção, no dispositivo do próprio signatário, com leitura do termo, aceite expresso das cláusulas, fotografia do signatário no ato e assinatura manuscrita digital.");
+  row("Dispositivo",navigator.userAgent);
+  row("Aceites registrados",c.aceites.join(" | "));
+  row("Hash SHA-256 do conteúdo",c.hashConteudo);
+  doc.setFontSize(8.5);doc.setTextColor(90);
+  const nota=doc.splitTextToSize("O hash do conteúdo é calculado sobre o texto integral do termo, os dados do signatário, o identificador e a data/hora, e sobre as imagens da assinatura e da fotografia. O hash do arquivo PDF final fica registrado no sistema da produção e pode ser conferido a qualquer tempo para comprovar que este arquivo não foi alterado.",LW);
+  doc.text(nota,M,y);y+=nota.length*4+6;doc.setTextColor(0);
+  doc.setFont("helvetica","bold");doc.setFontSize(10);doc.text("Fotografia do signatário no ato",M,y);
+  if(assets.doc) doc.text("Documento de identificação",M+90,y);
+  y+=3;
+  doc.addImage(assets.selfie,"JPEG",M,y,70,70,undefined,"FAST");
+  if(assets.doc) doc.addImage(assets.doc,"JPEG",M+90,y,70,70*0.66,undefined,"FAST");
+  y+=74;
+  doc.setFont("helvetica","bold");doc.text("Assinatura",M,y);y+=2;
+  doc.addImage(assets.assinatura,"PNG",M,y,70,26);
+  return doc.output("arraybuffer");
+}
+
+
+/* ===================== Boot ===================== */
+async function boot(){
+  S.pin = store.get("pinAdmin");
+  if(BOOT.prod){ S.view="assinar"; render(); return carregarProdPublica(); }
+  if(BOOT.view==="verificar"){ S.view="verificar"; S.publico=true; return render(); }
+  if(!S.pin){ S.view="login"; return render(); }
+  try{ S.urls = await api("entrar",S.pin); await carregarProducoes(); S.view="producoes"; render(); }
+  catch(e){ store.del("pinAdmin"); S.pin=null; S.view="login"; S.erro=errMsg(e); render(); }
+}
+async function carregarProdPublica(){
+  try{ S.prodPub = await api("producaoPublica",BOOT.prod); S.set=novoSet(); }
+  catch(e){ S.prodPub=null; S.erro=errMsg(e); }
+  render();
+}
+async function carregarProducoes(){
+  S.producoes = await api("listarProducoes",S.pin);
+  if(!S.producoes.find(p=>p.id===S.prodSel)) S.prodSel = S.producoes[0]?.id||null;
+}
+const prodAtual = () => S.view==="assinar" ? S.prodPub : (S.producoes.find(p=>p.id===S.prodSel)||null);
+const linkProd = id => `${APP_URL}?p=${encodeURIComponent(id)}`;
+
+/* ===================== Render ===================== */
+function render(){
+  const admin = !!S.pin && S.urls && !["assinar","login"].includes(S.view) && !S.publico;
+  $("#nav").innerHTML = admin ? [["producoes","Produções"],["elenco","Assinados"],["banco","Banco"],["verificar","Verificar"]]
+    .map(([v,l])=>`<button data-v="${v}" class="${S.view===v?"on":""}">${l}</button>`).join("")+`<button data-sair>Sair</button>` : "";
+  const p = prodAtual();
+  $("#hdrSub").textContent = S.view==="assinar" ? (p?`${prodTitulo(p)} · ${empNome(p.produtora)}`:"") : (admin?"Área da produção":"Elenco · assinatura");
+  const v = {login:viewLogin, producoes:viewProducoes, elenco:viewElenco, banco:viewBanco, verificar:viewVerificar, assinar:viewAssinar}[S.view];
+  app.innerHTML = v();
+  bind[S.view]?.();
+}
+const bind = {};
+$("#nav").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  if(b.hasAttribute("data-sair")){ store.del("pinAdmin"); S.pin=null; S.urls=null; S.view="login"; return render(); }
+  setView(b.dataset.v);
+});
+async function setView(v){
+  S.view=v; S.erro=null; render(); window.scrollTo(0,0);
+  try{
+    if(v==="elenco" && S.prodSel){ S.assin=null; render(); S.assin = await api("listarAssinaturas",S.pin,S.prodSel); render(); }
+    if(v==="banco"){ S.banco = await api("listarBanco",S.pin); if(S.view==="banco") drawBanco(); }
+  }catch(e){ S.erro=errMsg(e); render(); }
+}
+function alertErr(sel,msg){const el=$(sel);if(!el)return;el.textContent=msg;el.classList.remove("hidden");el.scrollIntoView({block:"center",behavior:"smooth"})}
+function erroBox(){ return S.erro?`<div class="notice err">${esc(S.erro)}</div>`:""; }
+
+/* ---------- Login ---------- */
+function viewLogin(){
+  return `<div class="card" style="max-width:420px;margin:40px auto">
+    <h2>Área da produção</h2>
+    <p class="muted small" style="margin-top:0">Digite o PIN definido no código do app.</p>
+    ${erroBox()}
+    <form id="loginF"><input type="password" id="pinIn" placeholder="PIN" autocomplete="current-password" style="margin-bottom:12px">
+    <button class="btn" style="width:100%" id="loginB">Entrar</button></form>
+    <p class="small muted" style="margin-bottom:0">O elenco não precisa entrar aqui: ele assina pelo link de cada produção.</p>
+  </div>`;
+}
+bind.login=()=>{
+  $("#pinIn").focus();
+  $("#loginF").onsubmit=async e=>{
+    e.preventDefault(); const pin=$("#pinIn").value.trim(); if(!pin) return;
+    const b=$("#loginB"); b.disabled=true; b.textContent="Entrando…";
+    try{ S.urls=await api("entrar",pin); S.pin=pin; store.set("pinAdmin",pin); S.erro=null; await carregarProducoes(); S.view="producoes"; render(); }
+    catch(x){ S.erro=errMsg(x); render(); }
+  };
+};
+
+/* ---------- Produções ---------- */
+function prodSelector(){
+  if(!S.producoes.length) return "";
+  return `<label class="f" style="max-width:420px">Produção
+    <select id="prodSel">${S.producoes.map(p=>`<option value="${p.id}" ${p.id===S.prodSel?"selected":""}>${esc(prodTitulo(p))} — ${esc(empNome(p.agencia))}</option>`).join("")}</select></label>`;
+}
+function viewProducoes(){
+  if(S.editProd) return prodForm(S.editProd);
+  const list = S.producoes.length ? S.producoes.map(p=>`<div class="item">
+      <div style="flex:1;min-width:0">
+        <div class="t">${esc(prodTitulo(p))}${p.filme?.campanha?` <span class="muted" style="font-weight:400">· ${esc(p.filme.campanha)}</span>`:""} ${p.ativo?"":`<span class="badge b-err">link encerrado</span>`}</div>
+        <div class="small muted">Agência: ${esc(empNome(p.agencia))} · Produtora: ${esc(empNome(p.produtora))}</div>
+        <div class="small muted">Gravação: ${esc(p.datasGravacao||"—")}${p.local?` · ${esc(p.local)}`:""}</div>
+      </div>
+      <div class="row" style="justify-content:flex-end">
+        ${p.pastaUrl?`<a class="btn sm ghost" href="${esc(p.pastaUrl)}" target="_blank" rel="noopener">Pasta</a>`:""}
+        <button class="btn sm ghost" data-edit="${p.id}">Editar</button>
+        <button class="btn sm" data-link="${p.id}">Link do elenco</button>
+      </div>
+    </div>`).join("") : `<div class="empty">Nenhuma produção cadastrada.<br>Crie a primeira para gerar o link de assinatura.</div>`;
+  return `${erroBox()}<div class="card">
+    <div class="row" style="margin-bottom:14px"><div><h2>Produções</h2><div class="muted small">Cada produção tem seu próprio link de assinatura para o elenco.</div></div><div class="spacer"></div><button class="btn accent" id="newProd">+ Nova produção</button></div>
+    <div class="list">${list}</div>
+  </div>
+  <div class="card small">
+    <h3>Onde ficam os arquivos</h3>
+    <div>PDFs em <a href="${esc(S.urls?.pasta||"#")}" target="_blank" rel="noopener">Autorizações de Uso de Imagem — Elenco</a> (uma subpasta por produção). Todos os dados também ficam na <a href="${esc(S.urls?.planilha||"#")}" target="_blank" rel="noopener">planilha do app</a>.</div>
+  </div>`;
+}
+function abrirLink(id){
+  const p=S.producoes.find(x=>x.id===id); const url=linkProd(id);
+  const msg=`Olá! Antes da gravação de "${prodTitulo(p)}", preencha e assine sua autorização de uso de imagem por este link: ${url}`;
+  modal(`<h2 style="margin-bottom:6px">Link do elenco</h2><div class="small muted" style="margin-bottom:14px">${esc(prodTitulo(p))}</div>
+    <div id="qr" style="display:flex;justify-content:center;margin-bottom:14px"></div>
+    <input type="text" readonly value="${esc(url)}" id="linkIn" style="margin-bottom:10px">
+    <div class="row" style="margin-bottom:10px">
+      <button class="btn sm ghost" id="cpLink">Copiar link</button>
+      <a class="btn sm ghost" href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">Enviar no WhatsApp</a>
+      <a class="btn sm" href="${esc(url)}">Abrir neste aparelho (modo set)</a>
+    </div>
+    <p class="small muted">Aberto num aparelho em que você entrou com o PIN, o link funciona em <b>modo set</b>: preenche o elenco já cadastrado pelo CPF e mostra o PDF no fim. No celular do elenco, ele só assina.</p>
+    <div class="row"><div class="spacer"></div><button class="btn ghost sm" id="mClose">Fechar</button></div>`);
+  try{ new QRCode($("#qr"),{text:url,width:200,height:200,correctLevel:QRCode.CorrectLevel.M}); }catch(e){ $("#qr").remove(); }
+  $("#mClose").onclick=closeModal;
+  $("#cpLink").onclick=async()=>{ const i=$("#linkIn"); i.select(); try{ await navigator.clipboard.writeText(url); }catch(e){ try{document.execCommand("copy")}catch(x){} } $("#cpLink").textContent="Copiado!"; };
+}
+bind.producoes=()=>{
+  $("#newProd")?.addEventListener("click",()=>{S.editProd={midias:["Internet e redes sociais"],prazoMeses:12,territorio:"Brasil",produtora:{},agencia:{},filme:{},ativo:true};render()});
+  app.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{const p=S.producoes.find(x=>x.id===b.dataset.edit);S.editProd=JSON.parse(JSON.stringify(p));render()});
+  app.querySelectorAll("[data-link]").forEach(b=>b.onclick=()=>abrirLink(b.dataset.link));
+  bindProdForm();
+};
+function prodForm(p){
+  const pr=p.produtora||{},ag=p.agencia||{},f=p.filme||{};
+  const inp=(id,label,val,req,type="text",extra="")=>`<label class="f ${extra}"><span class="${req?"req":""}">${label}</span><input type="${type}" id="${id}" value="${esc(val||"")}"></label>`;
+  return `<div class="card">
+    <div class="row" style="margin-bottom:6px"><h2>${p.id?"Editar produção":"Nova produção"}</h2><div class="spacer"></div><button class="btn ghost sm" id="cancelProd">Voltar</button></div>
+    ${p.id?`<div class="notice info">Alterações valem para os próximos termos. Os termos já assinados ficam como foram assinados.</div>`:""}
+    <h3>Filme</h3>
+    <div class="grid">
+      ${inp("f_titulo","Título do filme / peça",f.titulo,1)}
+      ${inp("f_campanha","Campanha",f.campanha)}
+      ${inp("f_anunciante","Anunciante / cliente",p.anunciante)}
+      ${inp("f_diretor","Direção",p.diretor)}
+      ${inp("f_datas","Data(s) de gravação",p.datasGravacao,1)}
+      ${inp("f_local","Local da gravação",p.local)}
+    </div>
+    <h3>Produtora</h3>
+    <div class="grid">
+      ${inp("pr_cnpj","CNPJ",pr.cnpj?fmtCNPJ(pr.cnpj):"",1)}<div class="small muted span2" id="pr_hint" style="align-self:end"></div>
+      ${inp("pr_nome","Razão social (opcional)",pr.nome)}
+      ${inp("pr_end","Endereço da sede (opcional)",pr.endereco,0,"text","span2")}
+      ${inp("pr_email","E-mail para LGPD (opcional)",pr.email,0,"email")}
+      ${inp("f_rep","Representante da produção no set",p.repSet)}
+    </div>
+    <h3>Agência</h3>
+    <div class="grid">
+      ${inp("ag_cnpj","CNPJ",ag.cnpj?fmtCNPJ(ag.cnpj):"",1)}<div class="small muted span2" id="ag_hint" style="align-self:end"></div>
+      ${inp("ag_nome","Nome (opcional)",ag.nome)}
+    </div>
+    <h3>Condições de uso</h3>
+    <div style="margin-bottom:12px"><div class="small" style="font-weight:500;margin-bottom:6px">Mídias autorizadas</div>
+      <div class="chips">${MIDIAS.map(m=>`<label class="chip"><input type="checkbox" name="midia" value="${esc(m)}" ${(p.midias||[]).includes(m)?"checked":""}>${esc(m)}</label>`).join("")}</div>
+    </div>
+    <div class="grid">
+      ${inp("f_terr","Território",p.territorio||"Brasil",1)}
+      ${inp("f_prazo","Prazo (meses)",p.prazoMeses||12,1,"number")}
+      ${inp("f_inicio","Início previsto da veiculação",p.inicioVeiculacao,0,"date")}
+      ${inp("f_foro","Foro (cidade/UF)",p.foro)}
+      ${inp("f_cidade","Cidade da assinatura",p.cidadeAssinatura)}
+    </div>
+    <label class="f" style="margin-top:12px">Remuneração padrão (quando o cachê não for informado)
+      <textarea id="f_remun" placeholder="Ex.: A presente autorização é concedida a título gratuito, sem qualquer remuneração adicional pelo uso de imagem.">${esc(p.remuneracaoPadrao||"")}</textarea></label>
+    <label class="f" style="margin-top:12px">Cláusulas adicionais (opcional)
+      <textarea id="f_extras" placeholder="Ex.: exclusividade de categoria por 6 meses…">${esc(p.clausulasExtras||"")}</textarea></label>
+    ${p.id?`<label class="check" style="border:0;margin-top:8px"><input type="checkbox" id="f_ativo" ${p.ativo!==false?"checked":""}><span><b>Link de assinatura aberto</b><br><span class="small muted">Desmarque para encerrar o link quando a produção terminar.</span></span></label>`:""}
+    <div id="prodErr" class="notice err hidden" style="margin-top:14px"></div>
+    <div class="row" style="margin-top:18px"><div class="spacer"></div><button class="btn" id="saveProd">Salvar produção</button></div>
+  </div>`;
+}
+function bindProdForm(){
+  if(!S.editProd) return;
+  $("#cancelProd").onclick=()=>{S.editProd=null;render()};
+  [["pr_cnpj","pr"],["ag_cnpj","ag"]].forEach(([id,pre])=>{const el=$("#"+id);el.oninput=async()=>{
+    el.value=fmtCNPJ(el.value);const d=onlyDigits(el.value);el.classList.toggle("bad",d.length===14&&!cnpjOk(d));
+    const hint=$("#"+pre+"_hint");hint.textContent="";
+    if(!cnpjOk(d))return;
+    try{const e=await api("buscarEmpresa",S.pin,d);
+      if(onlyDigits($("#"+id).value)!==d) return;
+      if(e){const nome=$("#"+pre+"_nome");if(!nome.value&&e.nome)nome.value=e.nome;
+        if(pre==="pr"){const en=$("#pr_end"),em=$("#pr_email");if(!en.value&&e.endereco)en.value=e.endereco;if(!em.value&&e.email)em.value=e.email}
+        hint.textContent="✓ Empresa já cadastrada — dados preenchidos.";}
+      else hint.innerHTML=`Empresa nova: digite o nome uma vez e o app guarda. <a href="https://solucoes.receita.fazenda.gov.br/Servicos/cnpjreva/cnpjreva_solicitacao.asp" target="_blank" rel="noopener">Consultar na Receita</a>`;
+    }catch(x){}
+  }});
+  $("#saveProd").onclick=async()=>{
+    const v=id=>($("#"+id)?.value||"").trim();
+    const p=S.editProd;
+    const data={
+      id:p.id, ativo: $("#f_ativo") ? $("#f_ativo").checked : true,
+      filme:{titulo:v("f_titulo"),campanha:v("f_campanha")},
+      anunciante:v("f_anunciante"),diretor:v("f_diretor"),datasGravacao:v("f_datas"),local:v("f_local"),
+      produtora:{nome:v("pr_nome"),cnpj:onlyDigits(v("pr_cnpj")),endereco:v("pr_end"),email:v("pr_email")},
+      repSet:v("f_rep"), agencia:{nome:v("ag_nome"),cnpj:onlyDigits(v("ag_cnpj"))},
+      midias:[...app.querySelectorAll("input[name=midia]:checked")].map(i=>i.value),
+      territorio:v("f_terr"),prazoMeses:Math.max(1,parseInt(v("f_prazo"))||12),inicioVeiculacao:v("f_inicio"),
+      foro:v("f_foro"),cidadeAssinatura:v("f_cidade"),remuneracaoPadrao:v("f_remun"),clausulasExtras:v("f_extras")
+    };
+    const miss=[];
+    if(!data.filme.titulo)miss.push("título do filme");if(!data.datasGravacao)miss.push("data de gravação");
+    if(!cnpjOk(data.produtora.cnpj))miss.push("CNPJ válido da produtora");if(!cnpjOk(data.agencia.cnpj))miss.push("CNPJ válido da agência");
+    if(!data.midias.length)miss.push("ao menos uma mídia");if(!data.territorio)miss.push("território");
+    if(miss.length) return alertErr("#prodErr","Preencha: "+miss.join(", ")+".");
+    const btn=$("#saveProd");btn.disabled=true;btn.textContent="Salvando…";
+    try{ const salvo=await api("salvarProducao",S.pin,data); await carregarProducoes(); S.prodSel=salvo.id; S.editProd=null; render(); if(!p.id) abrirLink(salvo.id); }
+    catch(e){btn.disabled=false;btn.textContent="Salvar produção";alertErr("#prodErr",errMsg(e))}
+  };
+}
+
+/* ---------- Assinar (link do elenco) ---------- */
+function novoSet(){ return {step:0,c:{funcao:FUNCOES[0],resp:{}},aceites:{},selfie:null,docImg:null,sig:null,result:null,err:null,busy:false}; }
+const modoSet = () => !!S.pin;
+function viewAssinar(){
+  const p=prodAtual();
+  if(!p) return S.erro ? `<div class="card"><div class="empty">${esc(S.erro)}</div></div>` : `<div class="card"><div class="empty">Carregando…</div></div>`;
+  const st=S.set, c=st.c;
+  const setBadge = modoSet() ? `<span class="badge b-warn">modo set · produção</span>` : "";
+  const head=`<div class="prodhead"><div class="row"><div class="t">${esc(prodTitulo(p))}</div>${setBadge}</div><div class="small muted">${esc(empNome(p.agencia))} · ${esc(empNome(p.produtora))} · ${esc(p.datasGravacao||"")}</div></div>`;
+  const bar=`<div class="steps">${[0,1,2,3].map(i=>`<div class="${i<=st.step?"on":""}"></div>`).join("")}</div>`;
+  let body="";
+  if(st.result){
+    const r=st.result;
+    body=`<div class="done">
+      <div class="big">✓</div>
+      <h2 style="margin-top:12px">Termo assinado</h2>
+      <p class="muted">${esc(c.nome)}${c.personagem?` · ${esc(c.personagem)}`:""}<br>${esc(agoraBR(new Date(r.assinadoEm)))}</p>
+      ${r.emailEnviado?`<p class="small">Uma cópia foi enviada para <b>${esc(c.email)}</b>.</p>`:""}
+      <p class="row" style="justify-content:center">
+        ${r.url?`<a class="btn ghost sm" href="${esc(r.url)}" target="_blank" rel="noopener">Abrir PDF no Drive</a>`:""}
+        ${r.blobUrl?`<a class="btn ghost sm" href="${r.blobUrl}" download="${esc(r.filename)}">Baixar minha cópia</a>`:""}
+      </p>
+      <p class="small muted" style="margin-top:18px">Documento ${esc(r.docId)}<br><code class="h">SHA-256: ${esc(r.hashPdf)}</code></p>
+      <button class="btn accent" id="nextCast" style="margin-top:10px">${modoSet()?"Próxima pessoa do elenco":"Assinar para outra pessoa"}</button>
+    </div>`;
+    return `<div class="card">${head}${body}</div>`;
+  }
+  if(st.step===0){
+    const inp=(id,label,val,req,type="text",extra="",attrs="")=>`<label class="f ${extra}"><span class="${req?"req":""}">${label}</span><input type="${type}" id="${id}" value="${esc(val||"")}" ${attrs}></label>`;
+    const menor = idade(c.nascimento)!==null && idade(c.nascimento)<18;
+    const temExtra=!!(c.nomeArtistico||c.rg||c.drt||c.email||c.endereco||c.instagram);
+    body=`<h2>Seus dados</h2><p class="muted small" style="margin-top:0">${modoSet()?"Comece pelo CPF. Se a pessoa já trabalhou com a produção, o resto aparece preenchido.":"Preencha como consta no seu documento."}</p>
+    <div class="grid">
+      ${inp("c_cpf","CPF",c.cpf?fmtCPF(c.cpf):"",1,"text","",'inputmode="numeric" autocomplete="off"')}
+      <div class="small muted span2" id="cpfHint" style="align-self:end">${st.doBanco?"✓ Cadastro encontrado no banco de elenco — confira os dados.":""}</div>
+      ${inp("c_nome","Nome completo",c.nome,1,"text","span2",'autocomplete="name"')}
+      ${inp("c_nasc","Data de nascimento",c.nascimento,1,"date")}
+      ${inp("c_tel","Telefone / WhatsApp com DDD",c.telefone,1,"tel")}
+      ${inp("c_email","E-mail (para receber sua cópia)",c.email,0,"email")}
+    </div>
+    <details style="margin-top:14px" ${temExtra&&!c.email?"open":""}><summary class="small" style="cursor:pointer;font-weight:600">Mais dados (opcional)</summary>
+      <div class="grid" style="margin-top:10px">
+        ${inp("c_art","Nome artístico",c.nomeArtistico)}
+        ${inp("c_insta","Instagram",c.instagram,0,"text","",'placeholder="@"')}
+        ${inp("c_rg","RG",c.rg)}
+        ${inp("c_drt","DRT",c.drt)}
+        ${inp("c_end","Endereço",c.endereco,0,"text","span2")}
+      </div>
+    </details>
+    <h3>Sua participação</h3>
+    <div class="grid">
+      <label class="f"><span>Função</span><select id="c_func">${FUNCOES.map(f=>`<option ${f===c.funcao?"selected":""}>${f}</option>`).join("")}</select></label>
+      ${inp("c_pers","Personagem / papel",c.personagem)}
+      ${modoSet()?inp("c_cache","Cachê (produção)",c.cache,0,"text","",'placeholder="Ex.: R$ 1.500,00"'):""}
+    </div>
+    <div id="menorBox" class="${menor?"":"hidden"}">
+      <h3>Responsável legal (menor de 18 anos)</h3>
+      <div class="notice warn">Quem assina é o responsável legal da criança ou adolescente.</div>
+      <div class="grid">
+        ${inp("r_nome","Nome do responsável",c.resp.nome,1,"text","span2")}
+        ${inp("r_cpf","CPF do responsável",c.resp.cpf?fmtCPF(c.resp.cpf):"",1,"text","",'inputmode="numeric"')}
+        <label class="f"><span class="req">Parentesco</span><select id="r_par">${["mãe","pai","tutor(a)","guardião(ã)"].map(x=>`<option ${x===c.resp.parentesco?"selected":""}>${x}</option>`).join("")}</select></label>
+      </div>
+    </div>`;
+  }
+  else if(st.step===1){
+    const items=[
+      ["leu","Li o termo inteiro e entendi o que estou autorizando."],
+      ["midias",`Autorizo o uso nas mídias listadas, no território "${p.territorio}", por ${p.prazoMeses} meses.`],
+      ["lgpd","Concordo com o tratamento dos meus dados e com a fotografia para comprovar minha identidade."],
+      ["eletr","Aceito assinar eletronicamente e reconheço a validade desta assinatura."]
+    ];
+    body=`<h2>Termo de autorização</h2><p class="muted small" style="margin-top:0">Leia com atenção.${c.menor?" Assinatura do responsável legal.":""}</p>
+    <div class="term">${esc(termoTexto(p,c))}</div>
+    <div style="margin-top:10px">${items.map(([k,l])=>`<label class="check"><input type="checkbox" data-ac="${k}" ${st.aceites[k]?"checked":""}><span>${esc(l)}</span></label>`).join("")}</div>`;
+  }
+  else if(st.step===2){
+    body=`<h2>Foto de quem assina</h2><p class="muted small" style="margin-top:0">Uma foto do rosto${c.menor?" do responsável legal":""}, tirada agora. Ela comprova quem assinou.</p>
+    <div class="photo">
+      ${st.selfie?`<img src="${st.selfie}" alt="Foto do signatário">`:`<div class="ph">Nenhuma foto ainda</div>`}
+      <label class="btn accent">${st.selfie?"Tirar outra foto":"Tirar foto"}<input type="file" accept="image/*" capture="user" id="selfieIn" class="hidden"></label>
+    </div>
+    <h3>Documento com foto (opcional)</h3>
+    <div class="photo">
+      ${st.docImg?`<img src="${st.docImg}" alt="Documento" style="width:220px;height:146px">`:`<div class="ph" style="width:220px;height:146px">RG ou CNH</div>`}
+      <label class="btn ghost">${st.docImg?"Trocar foto":"Fotografar documento"}<input type="file" accept="image/*" capture="environment" id="docIn" class="hidden"></label>
+    </div>`;
+  }
+  else if(st.step===3){
+    const quem = c.menor ? `${c.resp.nome}, responsável legal de ${c.nome}` : c.nome;
+    body=`<h2>Assinatura</h2><p class="muted small" style="margin-top:0">Assine com o dedo: <b>${esc(quem)}</b></p>
+    <div class="sigwrap"><canvas id="sig"></canvas><div class="line"></div><div class="hint">Assine acima da linha</div></div>
+    <div class="row" style="margin-top:10px"><button class="btn ghost sm" id="sigClear">Limpar</button></div>`;
+  }
+  const nav = `<div id="setErr" class="notice err ${st.err?"":"hidden"}" style="margin-top:14px">${esc(st.err||"")}</div>
+    <div class="row" style="margin-top:18px">
+      ${st.step>0?`<button class="btn ghost" id="back">Voltar</button>`:""}
+      <div class="spacer"></div>
+      <button class="btn ${st.step===3?"accent":""}" id="next" ${st.busy?"disabled":""}>${st.busy?esc(st.busy):st.step===3?"Assinar e enviar":"Continuar"}</button>
+    </div>`;
+  const rodape = st.step===0 && !modoSet() ? `<p class="small muted" style="text-align:center;margin-top:18px"><a href="#" id="souProd">Sou da produção</a></p>` : "";
+  return `<div class="card">${head}${bar}${body}${nav}</div>${rodape}`;
+}
+let sigPad=null;
+bind.assinar=()=>{
+  const st=S.set; if(!st) return;
+  $("#back")?.addEventListener("click",()=>{collectStep();st.step--;st.err=null;render()});
+  $("#next")?.addEventListener("click",nextStep);
+  $("#nextCast")?.addEventListener("click",()=>{ if(st.result?.blobUrl) URL.revokeObjectURL(st.result.blobUrl); S.set=novoSet();render();window.scrollTo(0,0)});
+  $("#souProd")?.addEventListener("click",e=>{e.preventDefault();
+    modal(`<h2>Modo set</h2><p class="small muted" style="margin-top:0">Digite o PIN da produção para usar este aparelho no set.</p><input type="password" id="mPin" style="margin-bottom:10px"><div id="mErr" class="notice err hidden"></div><div class="row"><div class="spacer"></div><button class="btn ghost" id="mNo">Cancelar</button><button class="btn" id="mOk">Entrar</button></div>`);
+    $("#mNo").onclick=closeModal;
+    $("#mOk").onclick=async()=>{const pin=$("#mPin").value.trim();try{S.urls=await api("entrar",pin);S.pin=pin;store.set("pinAdmin",pin);closeModal();render()}catch(x){alertErr("#mErr",errMsg(x))}};
+  });
+  if(st.step===0 && !st.result){
+    const cpf=$("#c_cpf"); cpf.oninput=async()=>{cpf.value=fmtCPF(cpf.value);const d=onlyDigits(cpf.value);cpf.classList.toggle("bad",d.length===11&&!cpfOk(d));
+      if(!modoSet()||!cpfOk(d)) return;
+      const hint=$("#cpfHint"); hint.textContent="Procurando no banco de elenco…"; st.doBanco=false;
+      try{const b=await api("buscarCpf",S.pin,d);
+        if(onlyDigits($("#c_cpf").value)!==d) return;
+        if(!b){hint.textContent="Novo no banco de elenco — será cadastrado ao assinar.";return}
+        collectStep();
+        for(const k of ["nome","nomeArtistico","nascimento","telefone","email","endereco","rg","drt","instagram"]) if(!st.c[k]&&b[k]) st.c[k]=b[k];
+        if(b.resp&&!st.c.resp?.nome) st.c.resp={...b.resp};
+        st.c.cpf=d; st.doBanco=true; render();
+      }catch(x){hint.textContent="";}
+    };
+    const rc=$("#r_cpf"); if(rc) rc.oninput=()=>{rc.value=fmtCPF(rc.value)};
+    $("#c_nasc").onchange=e=>{const a=idade(e.target.value);$("#menorBox").classList.toggle("hidden",!(a!==null&&a<18))};
+  }
+  if(st.step===1) app.querySelectorAll("[data-ac]").forEach(i=>i.onchange=()=>{st.aceites[i.dataset.ac]=i.checked});
+  if(st.step===2){
+    $("#selfieIn").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{st.selfie=await loadImageFile(f,800,.8);st.err=null}catch(x){st.err="Não foi possível ler a foto."}render()};
+    $("#docIn").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{st.docImg=await loadImageFile(f,1100,.75)}catch(x){}render()};
+  }
+  if(st.step===3 && !st.result) initSig();
+};
+function collectStep(){
+  const st=S.set,c=st.c;
+  if(st.step!==0) return;
+  const v=id=>($("#"+id)?.value||"").trim();
+  if(!$("#c_cpf")) return;
+  Object.assign(c,{nome:v("c_nome").replace(/\s+/g," "),nomeArtistico:v("c_art"),cpf:onlyDigits(v("c_cpf")),rg:v("c_rg"),drt:v("c_drt"),nascimento:v("c_nasc"),telefone:v("c_tel"),email:v("c_email"),endereco:v("c_end"),instagram:v("c_insta"),funcao:v("c_func")||FUNCOES[0],personagem:v("c_pers"),cache:v("c_cache")});
+  const a=idade(c.nascimento); c.menor = a!==null && a<18;
+  c.resp = c.menor ? {nome:v("r_nome").replace(/\s+/g," "),cpf:onlyDigits(v("r_cpf")),parentesco:v("r_par")} : {};
+}
+async function nextStep(){
+  const st=S.set,c=st.c; st.err=null;
+  collectStep();
+  if(st.step===0){
+    const miss=[];
+    if(!cpfOk(c.cpf))miss.push("CPF válido");
+    if(c.nome.split(" ").length<2)miss.push("nome completo");
+    if(!c.nascimento)miss.push("data de nascimento");
+    if(onlyDigits(c.telefone).length<10)miss.push("telefone com DDD");
+    const a=idade(c.nascimento); if(a!==null&&(a<0||a>110))miss.push("data de nascimento correta");
+    if(c.email && !/.+@.+\..+/.test(c.email))miss.push("e-mail válido");
+    if(c.menor){ if(c.resp.nome.split(" ").length<2)miss.push("nome do responsável"); if(!cpfOk(c.resp.cpf))miss.push("CPF válido do responsável"); }
+    if(miss.length){st.err="Confira: "+miss.join(", ")+".";return render()}
+    st.step=1; render(); return window.scrollTo(0,0);
+  }
+  if(st.step===1){
+    if(!["leu","midias","lgpd","eletr"].every(k=>st.aceites[k])){st.err="Marque todas as confirmações para continuar.";return render()}
+    st.step=2; render(); return window.scrollTo(0,0);
+  }
+  if(st.step===2){
+    if(!st.selfie){st.err="Tire a foto de quem vai assinar.";return render()}
+    st.step=3; render(); return window.scrollTo(0,0);
+  }
+  if(st.step===3){
+    if(!sigPad||sigPad.strokes<1||sigPad.ink<40){st.err="Faça a assinatura no quadro.";return render()}
+    st.sig=sigPad.png();
+    await finalizar();
+  }
+}
+function initSig(){
+  const cv=$("#sig"); const ctx=cv.getContext("2d");
+  const r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1;cv.width=r.width*dpr;cv.height=r.height*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.lineWidth=2.4;ctx.lineCap="round";ctx.lineJoin="round";ctx.strokeStyle="#0b1d51";
+  sigPad={strokes:0,ink:0,png:()=>{
+    const d=ctx.getImageData(0,0,cv.width,cv.height).data;let x0=cv.width,y0=cv.height,x1=0,y1=0;
+    for(let y=0;y<cv.height;y+=2)for(let x=0;x<cv.width;x+=2){if(d[(y*cv.width+x)*4+3]>0){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}}
+    const pad=10,w=Math.max(1,x1-x0+pad*2),h=Math.max(1,y1-y0+pad*2);const ar=80/30;let W=w,H=h;if(W/H<ar)W=H*ar;else H=W/ar;
+    const o=document.createElement("canvas");o.width=W;o.height=H;o.getContext("2d").drawImage(cv,x0-pad,y0-pad,w,h,(W-w)/2,(H-h)/2,w,h);return o.toDataURL("image/png")}};
+  let drawing=false,last=null;
+  const pos=e=>{const b=cv.getBoundingClientRect();return{x:e.clientX-b.left,y:e.clientY-b.top}};
+  cv.onpointerdown=e=>{drawing=true;try{cv.setPointerCapture(e.pointerId)}catch(x){}last=pos(e);sigPad.strokes++;ctx.beginPath();ctx.arc(last.x,last.y,1.1,0,7);ctx.fillStyle="#0b1d51";ctx.fill()};
+  cv.onpointermove=e=>{if(!drawing)return;const p=pos(e);ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.stroke();sigPad.ink+=Math.hypot(p.x-last.x,p.y-last.y);last=p};
+  cv.onpointerup=cv.onpointercancel=()=>{drawing=false};
+  $("#sigClear").onclick=()=>{ctx.clearRect(0,0,cv.width,cv.height);sigPad.strokes=0;sigPad.ink=0};
+}
+function setBusy(msg){S.set.busy=msg;const b=$("#next");if(b){b.disabled=!!msg;b.textContent=msg||"Assinar e enviar"}}
+async function finalizar(){
+  const st=S.set,c=st.c,p=prodAtual();
+  try{
+    setBusy("Gerando documento…");
+    const {docId,assinadoEm} = await api("carimbo");
+    const rec={...c,docId,assinadoEm,assinadoEmBR:agoraBR(new Date(assinadoEm)),modo:modoSet()?"set":"link",
+      aceites:["Leitura integral do termo","Mídias, território e prazo","Tratamento de dados e fotografia (LGPD)","Assinatura eletrônica"]};
+    const texto=termoTexto(p,c);
+    const canon=JSON.stringify({docId,assinadoEm,texto,signatario:{nome:c.nome,cpf:c.cpf,resp:c.menor?c.resp:null},assinatura:await sha256(st.sig),foto:await sha256(st.selfie),documento:st.docImg?await sha256(st.docImg):null});
+    rec.hashConteudo=await sha256(canon);
+    const bytes=await gerarPdf(p,rec,{texto,assinatura:st.sig,selfie:st.selfie,doc:st.docImg});
+    const filename=`${slugFile(c.nome)}${c.personagem?" - "+slugFile(c.personagem):""} - Autorizacao de Imagem.pdf`;
+    setBusy("Enviando…");
+    const dados={nome:c.nome,nomeArtistico:c.nomeArtistico,cpf:c.cpf,rg:c.rg,drt:c.drt,nascimento:c.nascimento,telefone:c.telefone,email:c.email,endereco:c.endereco,instagram:c.instagram,funcao:c.funcao,personagem:c.personagem,cache:c.cache,menor:!!c.menor,resp:c.menor?c.resp:null};
+    const r=await api("assinar",{prodId:p.id,docId,dados,pdfBase64:b64FromBuf(bytes),hashConteudo:rec.hashConteudo,arquivo:filename,pin:S.pin||""});
+    let blobUrl=null; try{ blobUrl=URL.createObjectURL(new Blob([bytes],{type:"application/pdf"})); }catch(x){}
+    st.result={...r,filename,blobUrl}; st.busy=false; render(); window.scrollTo(0,0);
+  }catch(e){
+    st.busy=false; st.err="Não foi possível concluir: "+errMsg(e)+" Seus dados continuam aqui; toque em Assinar de novo.";
+    if(/PIN/.test(st.err)){ store.del("pinAdmin"); S.pin=null; }
+    render();
+  }
+}
+
+/* ---------- Assinados ---------- */
+function viewElenco(){
+  const p=prodAtual();
+  if(!p) return `<div class="card"><div class="empty">Nenhuma produção cadastrada.</div></div>`;
+  const fmt=iso=>new Intl.DateTimeFormat("pt-BR",{timeZone:TZ,dateStyle:"short",timeStyle:"short"}).format(new Date(iso));
+  const L=S.assin;
+  const rows=(L||[]).map(e=>`<tr>
+    <td><b>${esc(e.nome)}</b>${e.menor?`<br><span class="badge b-warn">menor · ${esc(e.responsavel)}</span>`:""}</td>
+    <td>${esc(e.funcao)}${e.personagem?`<br><span class="muted small">${esc(e.personagem)}</span>`:""}</td>
+    <td class="small">${esc(fmtCPF(e.cpf))}<br>${esc(e.telefone||"")}</td>
+    <td class="small">${esc(fmt(e.assinadoEm))}<br><span class="muted">${e.modo==="set"?"no set":"pelo link"}</span></td>
+    <td><a class="badge b-ok" href="${esc(e.arquivoUrl)}" target="_blank" rel="noopener">PDF</a></td></tr>`).join("");
+  return `${erroBox()}<div class="card">
+    <div class="row" style="margin-bottom:14px"><div>${prodSelector()}</div><div class="spacer"></div>
+      ${p.pastaUrl?`<a class="btn ghost sm" href="${esc(p.pastaUrl)}" target="_blank" rel="noopener">Pasta da produção</a>`:""}
+      <a class="btn ghost sm" href="${esc(S.urls?.planilha||"#")}" target="_blank" rel="noopener">Abrir planilha</a>
+      <button class="btn sm" id="reload">Atualizar</button></div>
+    ${L===null?`<div class="empty">Carregando…</div>`:L.length?`<div style="overflow:auto"><table class="t"><thead><tr><th>Nome</th><th>Função</th><th>CPF / Contato</th><th>Assinado</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><p class="small muted" style="margin-bottom:0">${L.length} termo(s) assinado(s).</p>`
+      :`<div class="empty">Nenhum termo assinado nesta produção ainda.</div>`}
+  </div>`;
+}
+bind.elenco=()=>{
+  $("#prodSel")?.addEventListener("change",e=>{S.prodSel=e.target.value;setView("elenco")});
+  $("#reload")?.addEventListener("click",()=>setView("elenco"));
+};
+
+/* ---------- Banco de elenco ---------- */
+function viewBanco(){
+  setTimeout(drawBanco,0);
+  return `${erroBox()}<div class="card">
+    <h2>Banco de elenco</h2><div class="muted small" style="margin-bottom:14px">Formado automaticamente por quem assina. Cada pessoa aparece uma vez, com os trabalhos que já fez.</div>
+    <input type="text" id="bancoQ" placeholder="Buscar por nome, telefone, Instagram ou personagem" value="${esc(S.bancoQ)}">
+    <div id="bancoList" style="margin-top:14px"></div>
+  </div>`;
+}
+function drawBanco(){
+  const el=$("#bancoList"); if(!el) return;
+  if(!S.banco){el.innerHTML=`<div class="empty">Carregando…</div>`;return}
+  const norm=x=>String(x||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+  const q=norm(S.bancoQ);
+  const list=S.banco.filter(b=>!q||[b.nome,b.nomeArtistico,b.telefone,b.instagram,...(b.trabalhos||[]).map(t=>t.personagem+" "+t.filme)].some(x=>norm(x).includes(q)));
+  if(!list.length){el.innerHTML=`<div class="empty">${S.banco.length?"Ninguém encontrado.":"O banco ainda está vazio. Ele se forma conforme o elenco assina."}</div>`;return}
+  el.innerHTML=`<div class="small muted" style="margin-bottom:8px">${list.length} pessoa(s)</div><div class="list">`+list.map(b=>{
+    const tel=onlyDigits(b.telefone);const ig=(b.instagram||"").replace(/^@/,"");const ts=b.trabalhos||[];
+    return `<div class="item" style="align-items:flex-start">
+      <div style="flex:1;min-width:0">
+        <div class="t">${esc(b.nome)}${b.nomeArtistico?` <span class="muted" style="font-weight:400">· ${esc(b.nomeArtistico)}</span>`:""}</div>
+        <div class="small muted">${idade(b.nascimento)??"—"} anos · ${esc(b.telefone||"")}${ig?` · @${esc(ig)}`:""}</div>
+        <div class="small" style="margin-top:4px">${ts.slice(0,4).map(t=>`${esc(t.filme)}${t.personagem?` (${esc(t.personagem)})`:""}`).join(" · ")}${ts.length>4?` · +${ts.length-4}`:""}</div>
+      </div>
+      <div class="list" style="gap:6px">
+        ${tel?`<a class="btn sm ghost" href="https://wa.me/55${tel.replace(/^55/,"")}" target="_blank" rel="noopener">WhatsApp</a>`:""}
+        ${ig?`<a class="btn sm ghost" href="https://instagram.com/${encodeURIComponent(ig)}" target="_blank" rel="noopener">Instagram</a>`:""}
+        <button class="btn sm ghost" data-rmb="${esc(b.cpf)}" style="color:var(--err)">Remover</button>
+      </div></div>`}).join("")+`</div>`;
+  el.querySelectorAll("[data-rmb]").forEach(bt=>bt.onclick=async()=>{
+    const b=S.banco.find(x=>x.cpf===bt.dataset.rmb);
+    if(!(await confirmBox(`Remover <b>${esc(b.nome)}</b> do banco de elenco? Os termos assinados e os PDFs continuam guardados.`,"Remover")))return;
+    try{await api("removerDoBanco",S.pin,b.cpf);S.banco=S.banco.filter(x=>x.cpf!==b.cpf);drawBanco()}catch(e){S.erro=errMsg(e);render()}
+  });
+}
+bind.banco=()=>{ $("#bancoQ").oninput=e=>{S.bancoQ=e.target.value;drawBanco()}; };
+
+/* ---------- Verificar ---------- */
+function viewVerificar(){
+  return `<div class="card">
+    <h2>Verificar um termo</h2>
+    <p class="muted small" style="margin-top:0">Selecione o PDF de uma autorização. O app confere se o arquivo é exatamente o que foi registrado no momento da assinatura.</p>
+    <label class="btn">Selecionar PDF<input type="file" accept="application/pdf" id="verIn" class="hidden"></label>
+    <div id="verOut" style="margin-top:16px"></div>
+    ${S.urls?`<p class="small muted" style="margin-bottom:0">Link público de verificação: <code class="h">${esc(APP_URL)}?v=verificar</code></p>`:""}
+  </div>`;
+}
+bind.verificar=()=>{
+  $("#verIn").onchange=async e=>{
+    const f=e.target.files[0];if(!f)return;const out=$("#verOut");out.innerHTML=`<div class="muted">Conferindo…</div>`;
+    try{
+      const h=await sha256(await f.arrayBuffer());
+      const r=await api("verificar",h);
+      out.innerHTML = r.ok ? `<div class="notice ok"><b>Documento autêntico e íntegro.</b><br>${esc(r.nome)} · ${esc(r.filme)}<br>Assinado em ${esc(agoraBR(new Date(r.assinadoEm)))}<br>ID ${esc(r.docId)}</div><code class="h">${h}</code>`
+        : `<div class="notice err"><b>Nenhum registro corresponde a este arquivo.</b> Ele pode ter sido alterado, ou não foi gerado por este app.</div><code class="h">${h}</code>`;
+    }catch(x){ out.innerHTML=`<div class="notice err">${esc(errMsg(x))}</div>`; }
+  };
+};
+
+/* ===================== Start ===================== */
+$("#modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal()});
+boot();
+
+})();
+</script>
+</body>
+</html>
