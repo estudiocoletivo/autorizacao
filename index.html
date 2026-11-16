@@ -110,6 +110,13 @@ const APP_URL = location.origin + location.pathname;
 /* ===================== Constantes e estado ===================== */
 const TZ = "America/Sao_Paulo";
 const MIDIAS = ["TV aberta","TV por assinatura","Internet e redes sociais","Streaming / CTV","Cinema","Mídia exterior (OOH/DOOH)","Mídia impressa","Ponto de venda","Rádio (áudio)","Eventos e feiras","Comunicação interna"];
+const USOS_IA = [
+  ["tratamento","tratamento e finalização da imagem (retoque, limpeza, correção de cor e remoção de elementos)"],
+  ["ambientacao","alteração de cenário, figurino, iluminação e idade aparente"],
+  ["dublagem","tradução e dublagem para outros idiomas com voz sintetizada a partir da voz do(a) AUTORIZANTE, com ajuste de sincronia labial"],
+  ["falas","ajustes pontuais de fala e texto (como preço, data, condição comercial ou nome de produto) com voz sintetizada a partir da voz do(a) AUTORIZANTE"],
+  ["replica","criação de novas cenas e versões da obra com réplica digital da imagem e da voz do(a) AUTORIZANTE"]
+];
 const FUNCOES = ["Elenco principal","Elenco de apoio","Figuração","Locução / voz","Participação especial"];
 const $ = (s,el=document)=>el.querySelector(s);
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -208,6 +215,7 @@ function termoTexto(p,c){
 `${cl()} REMUNERAÇÃO. ${remun}`,
 ``,
 `${cl()} NATUREZA DA AUTORIZAÇÃO. Este termo constitui licença de uso, limitada às condições acima, e não importa cessão de direitos autorais ou conexos, observado o art. 13 da Lei nº 6.533/1978. É vedado o uso da imagem de forma que atente contra a honra, a boa fama ou a respeitabilidade do(a) AUTORIZANTE (art. 20 do Código Civil), bem como a criação, por qualquer meio técnico, inclusive inteligência artificial, de novas cenas, falas ou interpretações não captadas na gravação, sem nova autorização específica.`,
+...(iaTexto(p,c,cl)),
 ``,
 `${cl()} DADOS PESSOAIS. Os dados pessoais do(a) AUTORIZANTE${menor?" e de seu(sua) representante":""}, incluindo a fotografia coletada para comprovação de identidade, serão tratados pela PRODUTORA para a execução deste termo e o cumprimento de obrigações legais (art. 7º, incisos II e V, da Lei nº 13.709/2018 — LGPD)${menor?", observado o melhor interesse da criança e do adolescente (art. 14 da LGPD)":""}, e armazenados pelo prazo de vigência acrescido dos prazos legais de guarda. O(A) titular poderá exercer os direitos do art. 18 da LGPD${pr.email?` pelo e-mail ${pr.email}`:" junto à PRODUTORA"}.`,
 ``,
@@ -218,6 +226,13 @@ function termoTexto(p,c){
 ``,
 `O(A) AUTORIZANTE${menor?", por meio de seu(sua) representante legal,":""} declara ter lido integralmente este termo, compreendido seu conteúdo e concordado livremente com todas as suas condições.`
   ].join("\n");
+}
+function iaAtiva(p){ return p.ia && p.ia.modo && p.ia.modo!=="nao" && (p.ia.usos||[]).length; }
+function iaTexto(p,c,cl){
+  if(!iaAtiva(p) || c.iaAceite!==true) return [];
+  const usos=USOS_IA.filter(([k])=>p.ia.usos.includes(k)).map(([,t],i)=>`(${String.fromCharCode(97+i)}) ${t}`).join("; ");
+  const aprov = p.ia.aprovacao!==false && (p.ia.usos.includes("falas")||p.ia.usos.includes("replica")||p.ia.usos.includes("dublagem"));
+  return [``,`${cl()} USO DE INTELIGÊNCIA ARTIFICIAL. Excepcionando a parte final da cláusula anterior, o(a) AUTORIZANTE autoriza, de forma específica e destacada, o uso de ferramentas de inteligência artificial sobre sua imagem e voz captadas na gravação, exclusivamente para: ${usos}. Esse uso fica restrito à obra, às mídias, ao território e ao prazo previstos neste termo. Fica vedado, em qualquer hipótese: (i) utilizar a imagem, a voz ou a réplica digital do(a) AUTORIZANTE para treinar, ajustar ou aprimorar modelos de inteligência artificial; (ii) criar conteúdo que atribua ao(à) AUTORIZANTE opiniões, declarações, endossos ou comportamentos não previstos no roteiro aprovado da obra; (iii) ceder, licenciar ou disponibilizar a réplica digital ou o modelo de voz a terceiros, ou utilizá-los em outras obras ou campanhas; e (iv) qualquer uso que atente contra a honra, a boa fama ou a respeitabilidade do(a) AUTORIZANTE.${aprov?" Versões com falas alteradas, dublagens ou cenas novas geradas por inteligência artificial serão submetidas previamente ao(à) AUTORIZANTE e só poderão ser veiculadas após sua aprovação expressa, que não será negada sem justo motivo.":""} As réplicas digitais e os modelos de voz eventualmente criados serão excluídos ao fim do prazo de veiculação, e o conteúdo gerado ou alterado por inteligência artificial será identificado como tal sempre que exigido pela legislação ou pelas normas de autorregulamentação publicitária aplicáveis.`];
 }
 function extenso(n){const u=["zero","um","dois","três","quatro","cinco","seis","sete","oito","nove","dez","onze","doze","treze","quatorze","quinze","dezesseis","dezessete","dezoito","dezenove"],d=["","","vinte","trinta","quarenta","cinquenta","sessenta","setenta","oitenta","noventa"];n=+n;if(n<20)return u[n]||String(n);if(n<100)return d[Math.floor(n/10)]+(n%10?" e "+u[n%10]:"");return String(n)}
 
@@ -445,6 +460,18 @@ function prodForm(p){
     </div>
     <label class="f" style="margin-top:12px">Remuneração padrão (quando o cachê não for informado)
       <textarea id="f_remun" placeholder="Ex.: A presente autorização é concedida a título gratuito, sem qualquer remuneração adicional pelo uso de imagem.">${esc(p.remuneracaoPadrao||"")}</textarea></label>
+    <h3>Uso de inteligência artificial</h3>
+    <label class="f" style="max-width:520px">Autorização de IA no termo
+      <select id="f_iamodo">
+        <option value="nao" ${(p.ia?.modo||"nao")==="nao"?"selected":""}>Não pedir — o termo proíbe o uso de IA</option>
+        <option value="opcional" ${p.ia?.modo==="opcional"?"selected":""}>Pedir — cada pessoa do elenco escolhe se autoriza</option>
+        <option value="obrigatorio" ${p.ia?.modo==="obrigatorio"?"selected":""}>Exigir — participar depende de autorizar</option>
+      </select></label>
+    <div id="iaBox" class="${(p.ia?.modo||"nao")==="nao"?"hidden":""}" style="margin-top:10px">
+      <div class="small" style="font-weight:500;margin-bottom:6px">Usos de IA autorizados</div>
+      <div class="list" style="gap:4px">${USOS_IA.map(([k,t])=>`<label class="check" style="padding:6px 0;border:0"><input type="checkbox" name="iauso" value="${k}" ${(p.ia?.usos||["tratamento"]).includes(k)?"checked":""}><span class="small">${esc(t.replace(/do\(a\) AUTORIZANTE/g,"da pessoa"))}</span></label>`).join("")}</div>
+      <label class="check" style="border:0;margin-top:4px"><input type="checkbox" id="f_iaaprov" ${p.ia?.aprovacao===false?"":"checked"}><span class="small"><b>Exigir aprovação prévia do elenco</b> para falas alteradas, dublagens e cenas novas feitas com IA</span></label>
+    </div>
     <label class="f" style="margin-top:12px">Cláusulas adicionais (opcional)
       <textarea id="f_extras" placeholder="Ex.: exclusividade de categoria por 6 meses…">${esc(p.clausulasExtras||"")}</textarea></label>
     ${p.id?`<label class="check" style="border:0;margin-top:8px"><input type="checkbox" id="f_ativo" ${p.ativo!==false?"checked":""}><span><b>Link de assinatura aberto</b><br><span class="small muted">Desmarque para encerrar o link quando a produção terminar.</span></span></label>`:""}
@@ -455,6 +482,7 @@ function prodForm(p){
 function bindProdForm(){
   if(!S.editProd) return;
   $("#cancelProd").onclick=()=>{S.editProd=null;render()};
+  $("#f_iamodo").onchange=e=>$("#iaBox").classList.toggle("hidden",e.target.value==="nao");
   [["pr_cnpj","pr"],["ag_cnpj","ag"]].forEach(([id,pre])=>{const el=$("#"+id);el.oninput=async()=>{
     el.value=fmtCNPJ(el.value);const d=onlyDigits(el.value);el.classList.toggle("bad",d.length===14&&!cnpjOk(d));
     const hint=$("#"+pre+"_hint");hint.textContent="";
@@ -478,12 +506,14 @@ function bindProdForm(){
       repSet:v("f_rep"), agencia:{nome:v("ag_nome"),cnpj:onlyDigits(v("ag_cnpj"))},
       midias:[...app.querySelectorAll("input[name=midia]:checked")].map(i=>i.value),
       territorio:v("f_terr"),prazoMeses:Math.max(1,parseInt(v("f_prazo"))||12),inicioVeiculacao:v("f_inicio"),
-      foro:v("f_foro"),cidadeAssinatura:v("f_cidade"),remuneracaoPadrao:v("f_remun"),clausulasExtras:v("f_extras")
+      foro:v("f_foro"),cidadeAssinatura:v("f_cidade"),remuneracaoPadrao:v("f_remun"),clausulasExtras:v("f_extras"),
+      ia:{modo:v("f_iamodo")||"nao",usos:[...app.querySelectorAll("input[name=iauso]:checked")].map(i=>i.value),aprovacao:!!$("#f_iaaprov")?.checked}
     };
     const miss=[];
     if(!data.filme.titulo)miss.push("título do filme");if(!data.datasGravacao)miss.push("data de gravação");
     if(!cnpjOk(data.produtora.cnpj))miss.push("CNPJ válido da produtora");if(!cnpjOk(data.agencia.cnpj))miss.push("CNPJ válido da agência");
-    if(!data.midias.length)miss.push("ao menos uma mídia");if(!data.territorio)miss.push("território");
+    if(!data.midias.length)miss.push("ao menos uma mídia");
+    if(data.ia.modo!=="nao"&&!data.ia.usos.length)miss.push("ao menos um uso de IA (ou escolha não pedir)");if(!data.territorio)miss.push("território");
     if(miss.length) return alertErr("#prodErr","Preencha: "+miss.join(", ")+".");
     const btn=$("#saveProd");btn.disabled=true;btn.textContent="Salvando…";
     try{ const salvo=await api("salvarProducao",S.pin,data); await carregarProducoes(); S.prodSel=salvo.id; S.editProd=null; render(); if(!p.id) abrirLink(salvo.id); }
@@ -563,7 +593,16 @@ function viewAssinar(){
       ["lgpd","Concordo com o tratamento dos meus dados e com a fotografia para comprovar minha identidade."],
       ["eletr","Aceito assinar eletronicamente e reconheço a validade desta assinatura."]
     ];
-    body=`<h2>Termo de autorização</h2><p class="muted small" style="margin-top:0">Leia com atenção.${c.menor?" Assinatura do responsável legal.":""}</p>
+    let iaBox="";
+    if(iaAtiva(p)){
+      const lista=USOS_IA.filter(([k])=>p.ia.usos.includes(k)).map(([,t])=>`<li>${esc(c.menor?t.replace(/da imagem e da voz do\(a\) AUTORIZANTE/g,"da imagem e da voz da criança ou adolescente").replace(/da voz do\(a\) AUTORIZANTE/g,"da voz da criança ou adolescente"):t.replace(/da imagem e da voz do\(a\) AUTORIZANTE/g,"da sua imagem e da sua voz").replace(/da voz do\(a\) AUTORIZANTE/g,"da sua voz"))}</li>`).join("");
+      iaBox=`<div class="notice info" style="margin-bottom:14px"><b>Uso de inteligência artificial</b><br>A produção pede autorização para usar IA na sua imagem e voz, só nesta obra e dentro do prazo do termo, para:<ul style="margin:6px 0 8px 18px;padding:0">${lista}</ul>Sua imagem e voz nunca serão usadas para treinar IA nem cedidas a terceiros.${p.ia.modo==="obrigatorio"?" <b>Nesta produção, autorizar o uso de IA é condição para participar.</b>":""}
+        <div class="row" style="margin-top:10px">
+          ${p.ia.modo==="opcional"?`<label class="chip"><input type="radio" name="iaop" value="sim" ${c.iaAceite===true?"checked":""}>Autorizo o uso de IA</label><label class="chip"><input type="radio" name="iaop" value="nao" ${c.iaAceite===false?"checked":""}>Não autorizo</label>`
+            :`<label class="chip"><input type="checkbox" id="iaob" ${c.iaAceite===true?"checked":""}>Autorizo o uso de IA descrito no termo</label>`}
+        </div></div>`;
+    }
+    body=`<h2>Termo de autorização</h2><p class="muted small" style="margin-top:0">Leia com atenção.${c.menor?" Assinatura do responsável legal.":""}</p>${iaBox}
     <div class="term">${esc(termoTexto(p,c))}</div>
     <div style="margin-top:10px">${items.map(([k,l])=>`<label class="check"><input type="checkbox" data-ac="${k}" ${st.aceites[k]?"checked":""}><span>${esc(l)}</span></label>`).join("")}</div>`;
   }
@@ -621,7 +660,12 @@ bind.assinar=()=>{
     const rc=$("#r_cpf"); if(rc) rc.oninput=()=>{rc.value=fmtCPF(rc.value)};
     $("#c_nasc").onchange=e=>{const a=idade(e.target.value);$("#menorBox").classList.toggle("hidden",!(a!==null&&a<18))};
   }
-  if(st.step===1) app.querySelectorAll("[data-ac]").forEach(i=>i.onchange=()=>{st.aceites[i.dataset.ac]=i.checked});
+  if(st.step===1){
+    app.querySelectorAll("[data-ac]").forEach(i=>i.onchange=()=>{st.aceites[i.dataset.ac]=i.checked});
+    const reTerm=()=>{const t=$(".term");if(t)t.textContent=termoTexto(prodAtual(),st.c)};
+    app.querySelectorAll("input[name=iaop]").forEach(i=>i.onchange=()=>{st.c.iaAceite=i.value==="sim";reTerm()});
+    $("#iaob")?.addEventListener("change",e=>{st.c.iaAceite=e.target.checked?true:null;reTerm()});
+  }
   if(st.step===2){
     $("#selfieIn").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{st.selfie=await loadImageFile(f,800,.8);st.err=null}catch(x){st.err="Não foi possível ler a foto."}render()};
     $("#docIn").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{st.docImg=await loadImageFile(f,1100,.75)}catch(x){}render()};
@@ -653,6 +697,11 @@ async function nextStep(){
     st.step=1; render(); return window.scrollTo(0,0);
   }
   if(st.step===1){
+    const pp=prodAtual();
+    if(iaAtiva(pp)){
+      if(pp.ia.modo==="opcional" && typeof c.iaAceite!=="boolean"){st.err="Escolha se autoriza ou não o uso de inteligência artificial.";return render()}
+      if(pp.ia.modo==="obrigatorio" && c.iaAceite!==true){st.err="Nesta produção, é preciso autorizar o uso de inteligência artificial para assinar.";return render()}
+    } else c.iaAceite=null;
     if(!["leu","midias","lgpd","eletr"].every(k=>st.aceites[k])){st.err="Marque todas as confirmações para continuar.";return render()}
     st.step=2; render(); return window.scrollTo(0,0);
   }
@@ -688,14 +737,14 @@ async function finalizar(){
     setBusy("Gerando documento…");
     const {docId,assinadoEm} = await api("carimbo");
     const rec={...c,docId,assinadoEm,assinadoEmBR:agoraBR(new Date(assinadoEm)),modo:modoSet()?"set":"link",
-      aceites:["Leitura integral do termo","Mídias, território e prazo","Tratamento de dados e fotografia (LGPD)","Assinatura eletrônica"]};
+      aceites:["Leitura integral do termo","Mídias, território e prazo","Tratamento de dados e fotografia (LGPD)","Assinatura eletrônica"].concat(iaAtiva(p)?[c.iaAceite?"Uso de inteligência artificial: AUTORIZADO":"Uso de inteligência artificial: NÃO AUTORIZADO"]:[])};
     const texto=termoTexto(p,c);
     const canon=JSON.stringify({docId,assinadoEm,texto,signatario:{nome:c.nome,cpf:c.cpf,resp:c.menor?c.resp:null},assinatura:await sha256(st.sig),foto:await sha256(st.selfie),documento:st.docImg?await sha256(st.docImg):null});
     rec.hashConteudo=await sha256(canon);
     const bytes=await gerarPdf(p,rec,{texto,assinatura:st.sig,selfie:st.selfie,doc:st.docImg});
     const filename=`${slugFile(c.nome)}${c.personagem?" - "+slugFile(c.personagem):""} - Autorizacao de Imagem.pdf`;
     setBusy("Enviando…");
-    const dados={nome:c.nome,nomeArtistico:c.nomeArtistico,cpf:c.cpf,rg:c.rg,drt:c.drt,nascimento:c.nascimento,telefone:c.telefone,email:c.email,endereco:c.endereco,instagram:c.instagram,funcao:c.funcao,personagem:c.personagem,cache:c.cache,menor:!!c.menor,resp:c.menor?c.resp:null};
+    const dados={nome:c.nome,nomeArtistico:c.nomeArtistico,cpf:c.cpf,rg:c.rg,drt:c.drt,nascimento:c.nascimento,telefone:c.telefone,email:c.email,endereco:c.endereco,instagram:c.instagram,funcao:c.funcao,personagem:c.personagem,cache:c.cache,menor:!!c.menor,resp:c.menor?c.resp:null,usoIA:iaAtiva(p)?(c.iaAceite?"autorizado":"não autorizado"):"não solicitado"};
     const r=await api("assinar",{prodId:p.id,docId,dados,pdfBase64:b64FromBuf(bytes),hashConteudo:rec.hashConteudo,arquivo:filename,pin:S.pin||""});
     let blobUrl=null; try{ blobUrl=URL.createObjectURL(new Blob([bytes],{type:"application/pdf"})); }catch(x){}
     st.result={...r,filename,blobUrl}; st.busy=false; render(); window.scrollTo(0,0);
@@ -716,7 +765,7 @@ function viewElenco(){
     <td><b>${esc(e.nome)}</b>${e.menor?`<br><span class="badge b-warn">menor · ${esc(e.responsavel)}</span>`:""}</td>
     <td>${esc(e.funcao)}${e.personagem?`<br><span class="muted small">${esc(e.personagem)}</span>`:""}</td>
     <td class="small">${esc(fmtCPF(e.cpf))}<br>${esc(e.telefone||"")}</td>
-    <td class="small">${esc(fmt(e.assinadoEm))}<br><span class="muted">${e.modo==="set"?"no set":"pelo link"}</span></td>
+    <td class="small">${esc(fmt(e.assinadoEm))}<br><span class="muted">${e.modo==="set"?"no set":"pelo link"}</span>${e.usoIA==="autorizado"?`<br><span class="badge b-ok">IA autorizada</span>`:e.usoIA==="não autorizado"?`<br><span class="badge b-err">IA não autorizada</span>`:""}</td>
     <td><a class="badge b-ok" href="${esc(e.arquivoUrl)}" target="_blank" rel="noopener">PDF</a></td></tr>`).join("");
   return `${erroBox()}<div class="card">
     <div class="row" style="margin-bottom:14px"><div>${prodSelector()}</div><div class="spacer"></div>
